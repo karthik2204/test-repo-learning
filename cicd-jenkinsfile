@@ -1,0 +1,100 @@
+pipeline
+{
+    options {
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '14', numToKeepStr: '20'))
+        timestamps()
+        }
+    parameters {
+        string(name: 'branch_name', defaultValue: 'master')
+        choice(name: 'env', choices: ['test', 'stage', 'prod'], description: 'select env to deploy')
+                  }
+    /*triggers {
+        cron('H/5 * * * *')
+    }*/              
+    agent 
+    {
+        label 'test'
+    }
+    stages
+    {
+        stage ('scm checkout'){
+            steps {
+                deleteDir()
+                dir('deploy')
+                {
+                    checkout([
+                    $class: 'GitSCM', 
+                    branches: [[name: "${branch_name}"]], 
+                    doGenerateSubmoduleConfigurations: false, 
+                    extensions: [], 
+                    submoduleCfg: [], 
+                    userRemoteConfigs: [[url: 'https://github.com/karthik2204/Maven-project']]
+                    ])}
+                    
+            }
+        }
+        stage ('build')
+        {
+         steps
+         {
+           sh '''
+           cd deploy
+           mvn clean install
+           '''
+         }
+		}
+        		
+        stage ('artifactory upload')
+        {
+            steps
+            {
+            rtUpload (
+                serverId: 'Artifactory',
+                spec: '''{
+                    "files": [
+                    {
+                        "pattern": "*.xml",
+                        "target": "/path/to/repo/folder/${BUILD_NUMBER}"
+                    }
+                    ]
+                }'''
+                
+                )
+            
+
+            }
+        }
+        stage ('Sonar_Analysis')
+        {
+            steps 
+            {
+                def scannerhome = tool 'SonarScanner'
+                withSonarQubeEnv('sonarQube')
+                {
+                    //sh 'mvn sonar:sonar'
+                    sh "${scannerhome/bin/sonar-scanner}"
+                    
+                }
+            }
+        }
+        
+    }
+	post
+	{
+	 always
+	 {
+	 deleteDir()
+	 }
+	 success{
+	 mail ( from: 'karthik.tj22@gmail.com',
+	 to: 'dev@org.com', 
+	 subject: 'Build ${BUILD_NUMBER} has failed' )
+	 }
+	 failure {
+	 mail ( from: 'karthik.tj22@gmail.com',
+	 to: 'dev@org.com', 
+	 subject: 'Build ${BUILD_NUMBER} has failed') 
+	 }
+	}
+	
+}

@@ -1,0 +1,8 @@
+#This Dockerfile is for building maven image
+
+FROM ubuntu:latest
+LABEL maintainer "karthik.tj22@gmail.com"
+
+RUN apt-get update && apt-get install -y \
+maven \
+openjdk-8-jre

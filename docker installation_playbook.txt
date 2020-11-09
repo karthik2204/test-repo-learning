@@ -1,0 +1,80 @@
+
+#Docker Installation.
+
+#Remove docker packages if exist #sudo apt remove docker docker-engine docker.io
+-name: Remove docker
+ apt:
+   name: "{{packages}}"
+   state: absent 
+ vars:
+   packages:
+   - docker
+   - docker-engine
+   - docker.io
+ tags:
+   - docker
+   
+#sudo apt update
+- name: Update repositories cache
+  apt:
+    update_cache: yes
+    become: yes
+    become_user: root
+  tags:
+    - docker
+
+
+#Installaing packages #sudo apt install apt-transport-https ca-certificates curl software-properties-common
+- name: Install list of packages
+  apt: 
+    name: "{{packages}}"
+	state: present
+  vars:
+    packages: 
+    - apt-transport-https
+    - curl
+    - ca-certificates
+	- software-properties-common
+  tags:
+    - docker
+	
+#Add and verify docker gpg key #curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+#sudo apt-key fingerprint 0EBFCD88
+- name: add apt key from url
+  apt-key:
+    id: 0EBFCD88
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  tags:
+    - docker
+    
+#add apt repository #sudo apt-add-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+-name: add repository
+ apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu (lsb_release -cs) stable"
+    state: present
+ tags:
+   - docker
+
+#sudo apt update
+- name: Update repositories cache
+  apt:
+    update_cache: yes
+    become: yes
+    become_user: root
+  tags:
+    - docker
+   
+#Install docker package #sudo apt install docker-ce
+- name: Install docker package
+  apt: 
+    name: docker-ce
+    state: present
+  tags:
+    - docker
+    
+ #Check docker version
+- name: Check docker version
+  command: docker --version
+  tags: 
+    - docker

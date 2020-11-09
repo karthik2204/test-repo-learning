@@ -1,0 +1,3 @@
+[submodule "pytest_scripts"]
+	path = pytest_scripts
+	url = https://github.com/arrthy/pytest_scripts

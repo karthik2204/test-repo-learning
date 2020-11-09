@@ -1,0 +1,46 @@
+pipeline
+{
+agent
+ {
+  label 'test'
+  }
+ stages
+  {
+   stage ('scm checkout')
+   {
+    steps {
+	  deleteDir()
+	  dir ('docker')
+	  {
+	  checkout scm: ([
+           $class: 'GitSCM',
+		   branches: [[name: 'master']], 
+		   userRemoteConfigs: [[url: 'https://github.com/karthik2204/learning' ]]
+		   ])
+		}   
+	}
+   }
+   stage ('docker image build')
+   {
+    steps {
+	withCredentials ([usernamePassword(credentialsId: 'e86c0dd9-2100-4703-9cdc-156d229b9359', usernameVariable: 'USER', passwordVariable: 'PASSWORD')])
+	 {
+	 sh '''
+	   cd docker
+	   docker login -u ${USER} -p ${PASSWORD}
+	   docker image build -t maven:latest -f maven-dockerfile .
+	   '''
+	   }
+	}
+   }
+   stage ('Tag and Push docker image')
+   {
+    steps {
+	sh '''
+	 docker image tag maven:latest karthik22/maven:latest
+	 docker push karthik22/maven:latest
+	 '''
+	}
+   }
+  }
+}
